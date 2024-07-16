@@ -1,19 +1,20 @@
 name: SonarCloud scan
 
 on:
-  pull_request: 
+  pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
-
   sonarcloud:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         java-version:
           - 8.0.x
-    
+        java-distribution:
+          - temurin
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,19 +23,15 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: ${{ matrix.java-distribution }}
           java-version: ${{ matrix.java-version }}
           cache: maven
       - name: Build with Maven
-        run: mvn -B package --file pom.xml
-      - name: List target directory
-        run: ls -la
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v2.3.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-            -Dsonar.java.binaries=target
+        run: mvn clean install
+      - name: Build with Maven
+        run: >
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar
+          -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+          -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          -Dsonar.host.url=https://sonarcloud.io
