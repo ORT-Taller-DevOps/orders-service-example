@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         java-version:
-          - 8.0.x
+          - 11
         java-distribution:
           - temurin
 
@@ -26,12 +26,10 @@ jobs:
           distribution: ${{ matrix.java-distribution }}
           java-version: ${{ matrix.java-version }}
           cache: maven
-      - name: Build with Maven
-        run: mvn clean install
-      - name: Build with Maven
-        run: >
-          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar
-          -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-          -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          -Dsonar.host.url=https://sonarcloud.io
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ matrix.java-distribution }}
+          java-version: ${{ matrix.java-version }}
+      - name: Analyze with SonarCloud
+        run: mvn -B verify sonar:sonar -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${{ secrets.SONAR_TOKEN }}
